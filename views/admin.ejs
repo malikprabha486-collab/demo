@@ -304,6 +304,149 @@
             border-radius: 8px;
             font-size: 13px;
         }
+
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+            border-bottom: 2px solid #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Timeline Styles */
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, #667eea, #764ba2);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 20px;
+            width: 12px;
+            height: 12px;
+            background: #667eea;
+            border-radius: 50%;
+            border: 2px solid #0f0f23;
+        }
+
+        .timeline-item.permission-event::before {
+            background: #38ef7d;
+        }
+
+        .timeline-item.denied-event::before {
+            background: #ff6b6b;
+        }
+
+        .timeline-time {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 5px;
+        }
+
+        .timeline-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .timeline-details {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* JSON Viewer Styles */
+        .json-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .json-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .json-viewer {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            padding: 20px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .json-key { color: #f8c555; }
+        .json-string { color: #98c379; }
+        .json-number { color: #d19a66; }
+        .json-boolean { color: #56b6c2; }
+        .json-null { color: #c678dd; }
+
+        /* Export Button */
+        .export-btn {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
     </style>
 </head>
 <body>
@@ -355,6 +498,15 @@
             </div>
         </div>
 
+        <!-- Tab Navigation -->
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="showTab('cards')">📊 Card View</button>
+            <button class="tab-btn" onclick="showTab('timeline')">📅 Timeline</button>
+            <button class="tab-btn" onclick="showTab('json')">{ } JSON Data</button>
+        </div>
+
+        <!-- Card View Tab -->
+        <div class="tab-content active" id="cards-tab">
         <h2 class="section-title">📊 Collected Data</h2>
 
         <div class="data-grid" id="dataGrid">
@@ -473,6 +625,136 @@
                 <% }) %>
             <% } %>
         </div>
+        </div>
+
+        <!-- Timeline Tab -->
+        <div class="tab-content" id="timeline-tab">
+            <h2 class="section-title">📅 Activity Timeline</h2>
+            <% if (data.length === 0) { %>
+                <div class="no-data">
+                    <div class="icon">📭</div>
+                    <h3>No Activity Yet</h3>
+                    <p>Events will appear here as visitors interact with the demo</p>
+                </div>
+            <% } else { %>
+                <div class="timeline">
+                    <%
+                    // Build timeline events from all visitors
+                    let timelineEvents = [];
+                    data.forEach((visitor, idx) => {
+                        // Visit event
+                        timelineEvents.push({
+                            time: visitor.timestamp,
+                            type: 'visit',
+                            icon: '👤',
+                            title: 'New Visitor',
+                            details: `IP: ${visitor.ip} | ${visitor.deviceInfo?.platform || 'Unknown'}`,
+                            visitorId: visitor.visitorId
+                        });
+
+                        // Permission events
+                        if (visitor.permissions?.camera === 'granted') {
+                            timelineEvents.push({
+                                time: visitor.timestamp,
+                                type: 'permission',
+                                icon: '📷',
+                                title: 'Camera Access Granted',
+                                details: `Visitor ${visitor.ip}`,
+                                visitorId: visitor.visitorId
+                            });
+                        }
+                        if (visitor.permissions?.camera === 'denied') {
+                            timelineEvents.push({
+                                time: visitor.timestamp,
+                                type: 'denied',
+                                icon: '📷',
+                                title: 'Camera Access Denied',
+                                details: `Visitor ${visitor.ip}`,
+                                visitorId: visitor.visitorId
+                            });
+                        }
+                        if (visitor.permissions?.microphone === 'granted') {
+                            timelineEvents.push({
+                                time: visitor.timestamp,
+                                type: 'permission',
+                                icon: '🎤',
+                                title: 'Microphone Access Granted',
+                                details: `Visitor ${visitor.ip}`,
+                                visitorId: visitor.visitorId
+                            });
+                        }
+                        if (visitor.permissions?.microphone === 'denied') {
+                            timelineEvents.push({
+                                time: visitor.timestamp,
+                                type: 'denied',
+                                icon: '🎤',
+                                title: 'Microphone Access Denied',
+                                details: `Visitor ${visitor.ip}`,
+                                visitorId: visitor.visitorId
+                            });
+                        }
+                        if (visitor.permissions?.location === 'granted') {
+                            timelineEvents.push({
+                                time: visitor.timestamp,
+                                type: 'permission',
+                                icon: '📍',
+                                title: 'Location Access Granted',
+                                details: visitor.location ? `${visitor.location.latitude.toFixed(4)}, ${visitor.location.longitude.toFixed(4)}` : `Visitor ${visitor.ip}`,
+                                visitorId: visitor.visitorId
+                            });
+                        }
+                        if (visitor.permissions?.location === 'denied') {
+                            timelineEvents.push({
+                                time: visitor.timestamp,
+                                type: 'denied',
+                                icon: '📍',
+                                title: 'Location Access Denied',
+                                details: `Visitor ${visitor.ip}`,
+                                visitorId: visitor.visitorId
+                            });
+                        }
+                        if (visitor.snapshots && visitor.snapshots.length > 0) {
+                            timelineEvents.push({
+                                time: visitor.snapshots[0].time || visitor.timestamp,
+                                type: 'permission',
+                                icon: '🖼️',
+                                title: `${visitor.snapshots.length} Snapshot(s) Captured`,
+                                details: `Visitor ${visitor.ip}`,
+                                visitorId: visitor.visitorId
+                            });
+                        }
+                    });
+
+                    // Sort by time descending
+                    timelineEvents.sort((a, b) => new Date(b.time) - new Date(a.time));
+                    %>
+                    <% timelineEvents.forEach(event => { %>
+                        <div class="timeline-item <%= event.type === 'permission' ? 'permission-event' : (event.type === 'denied' ? 'denied-event' : '') %>">
+                            <div class="timeline-time"><%= new Date(event.time).toLocaleString() %></div>
+                            <div class="timeline-title">
+                                <span><%= event.icon %></span>
+                                <span><%= event.title %></span>
+                            </div>
+                            <div class="timeline-details"><%= event.details %></div>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- JSON Tab -->
+        <div class="tab-content" id="json-tab">
+            <h2 class="section-title">{ } Raw JSON Data</h2>
+            <div class="json-container">
+                <div class="json-toolbar">
+                    <button class="btn export-btn" onclick="exportJSON()">📥 Export JSON</button>
+                    <button class="btn btn-secondary" onclick="copyJSON()">📋 Copy to Clipboard</button>
+                </div>
+                <div class="json-viewer" id="jsonViewer">
+                    <pre id="jsonContent"><%= JSON.stringify(data, null, 2) %></pre>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="refresh-indicator" id="refreshIndicator">
@@ -537,6 +819,63 @@
 
         // Auto-refresh every 10 seconds
         setInterval(refreshData, 10000);
+
+        // Tab switching
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Export JSON
+        function exportJSON() {
+            const data = <%- JSON.stringify(data) %>;
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'security-demo-data-' + new Date().toISOString().slice(0, 10) + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Copy JSON to clipboard
+        function copyJSON() {
+            const data = <%- JSON.stringify(data) %>;
+            const jsonText = JSON.stringify(data, null, 2);
+            navigator.clipboard.writeText(jsonText).then(() => {
+                alert('JSON copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+
+        // Syntax highlight JSON (optional enhancement)
+        function highlightJSON() {
+            const pre = document.getElementById('jsonContent');
+            if (pre) {
+                let json = pre.textContent;
+                json = json.replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:');
+                json = json.replace(/: "([^"]+)"/g, ': <span class="json-string">"$1"</span>');
+                json = json.replace(/: (\d+)/g, ': <span class="json-number">$1</span>');
+                json = json.replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>');
+                json = json.replace(/: (null)/g, ': <span class="json-null">$1</span>');
+                pre.innerHTML = json;
+            }
+        }
+
+        // Initialize
+        highlightJSON();
     </script>
 </body>
 </html>
